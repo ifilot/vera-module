@@ -1,3 +1,5 @@
 (sym_lib_table
-  (lib (name vera-module)(type Legacy)(uri ${KIPRJMOD}/vera-module.lib)(options "")(descr ""))
+	(version 7)
+	(lib (name "vera-module") (type "Legacy") (uri "${KIPRJMOD}/vera-module.lib") (options "") (descr ""))
+	(lib (name "vera-module-rev4-cache") (type "Legacy") (uri "${KIPRJMOD}/vera-module-rev4-cache.lib") (options "") (descr "Legacy project cache library"))
 )

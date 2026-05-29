@@ -1,1 +1,17 @@
 .DS_Store
+
+# Python/generated local files
+__pycache__/
+*.py[cod]
+.cache/
+
+# KiCad generated backups and local caches
+*-backups/
+*.bak
+*.bck
+*.kicad_pcb-bak
+*.kicad_sch-bak
+*.sch-bak
+_saved_*
+_autosave-*
+fp-info-cache

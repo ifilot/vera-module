@@ -1,0 +1,72 @@
+name: Placement site
+
+on:
+  push:
+    paths:
+      - ".github/workflows/placement-site.yml"
+      - "deploy/**"
+      - "pcb/fork-r0/**"
+      - "pcb/fork-r1/**"
+  pull_request:
+    paths:
+      - ".github/workflows/placement-site.yml"
+      - "deploy/**"
+      - "pcb/fork-r0/**"
+      - "pcb/fork-r1/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Generate placement site
+        run: ./deploy/generate-placement-site.sh
+
+      - name: Check generated files
+        run: |
+          test -f deploy/site/index.html
+          test -f deploy/site/fork-r0/index.html
+          test -f deploy/site/fork-r0/placements.csv
+          test -f deploy/site/fork-r1/index.html
+          test -f deploy/site/fork-r1/placements.csv
+
+      - name: Upload preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: placement-site
+          path: deploy/site
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: deploy/site
+
+  deploy:
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

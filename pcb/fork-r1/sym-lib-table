@@ -1,0 +1,6 @@
+(sym_lib_table
+	(version 7)
+	(lib (name "vera-module") (type "Legacy") (uri "${KIPRJMOD}/vera-module.lib") (options "") (descr ""))
+	(lib (name "vera-module-rev4-cache") (type "Legacy") (uri "D:/PROGRAMMING/KiCAD/vera-module/pcb/rev4/fork-r1-cache.lib") (options "") (descr "Legacy project cache library"))
+	(lib (name "components") (type "KiCad") (uri "${KIPRJMOD}/components") (options "") (descr ""))
+)

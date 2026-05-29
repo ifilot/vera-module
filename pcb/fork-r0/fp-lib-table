@@ -1,0 +1,4 @@
+(fp_lib_table
+	(version 7)
+	(lib (name "vera-module") (type "KiCad") (uri "${KIPRJMOD}/vera-module.pretty") (options "") (descr ""))
+)

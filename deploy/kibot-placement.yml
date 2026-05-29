@@ -1,0 +1,15 @@
+kibot:
+  version: 1
+
+outputs:
+  - name: interactive_placement_bom
+    comment: Interactive placement and assembly website
+    type: ibom
+    dir: .
+    options:
+      output: index.html
+      layer_view: FB
+      bom_view: left-right
+      checkboxes: Sourced,Placed
+      show_fabrication: true
+      highlight_pin1: selected
