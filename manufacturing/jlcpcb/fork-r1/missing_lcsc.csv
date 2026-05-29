@@ -1,0 +1,14 @@
+Designator,Comment,Footprint,Layer
+C13,2.7nF,Capacitor_SMD:C_0603_1608Metric,Top
+C14,1u,Capacitor_SMD:C_0603_1608Metric,Top
+C15,2.7nF,Capacitor_SMD:C_0603_1608Metric,Top
+C20,2.2uF,Capacitor_SMD:C_0603_1608Metric,Top
+C21,1uF,Capacitor_SMD:C_0603_1608Metric,Top
+R13,560,Resistor_SMD:R_0603_1608Metric,Top
+R15,560,Resistor_SMD:R_0603_1608Metric,Top
+U1,ICE40UP5K-SG48ITR50,Package_DFN_QFN:QFN-48-1EP_7x7mm_P0.5mm_EP5.3x5.3mm,Top
+U3,SN74CBTD3861PWR,Package_SO:TSSOP-24_4.4x7.8mm_P0.65mm,Top
+U4,"74CBTLV3126PW,118",Package_SO:TSSOP-14_4.4x5mm_P0.65mm,Top
+U6,WM8524CGEDT,Package_SO:TSSOP-16_4.4x5mm_P0.65mm,Top
+U9,AP3417CKTR-G1,Package_TO_SOT_SMD:SOT-23-5,Top
+X1,SG5032CAN_25.000000M-TJGA3,Oscillator:Oscillator_SMD_SeikoEpson_SG8002LB-4Pin_5.0x3.2mm,Top
