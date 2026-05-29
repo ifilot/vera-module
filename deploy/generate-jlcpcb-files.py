@@ -192,7 +192,7 @@ def parse_components(board: Path, include_through_hole: bool) -> list[dict]:
                 "footprint": footprint_name,
                 "lcsc": first_property(props, LCSC_FIELDS),
                 "x": num(at[1]),
-                "y": num(at[2]),
+                "y": -num(at[2]),
                 "rotation": num(at[3]) if len(at) >= 4 else 0.0,
                 "layer": "Bottom" if layer_name == "B.Cu" else "Top",
             }

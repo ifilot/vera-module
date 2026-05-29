@@ -33,7 +33,8 @@ for reference.
 - `programmer/stm32/`: STM32 firmware for the programmer.
 - `programmer/programmer_tool/`: host-side programmer tool.
 - `doc/`: VERA documentation and datasheets.
-- `deploy/`: scripts and configuration for generated placement websites.
+- `deploy/`: scripts and configuration for generated placement and manufacturing
+  outputs.
 
 ## Placement Website
 
@@ -60,6 +61,28 @@ The script prefers the Docker image `ghcr.io/inti-cmnb/kicad10_auto:latest`,
 which contains KiCad, KiBot, and InteractiveHtmlBom. If Docker is unavailable, it
 falls back to local KiBot/InteractiveHtmlBom tools, and finally to a limited
 built-in preview generator.
+
+## Manufacturing Files
+
+Generate the complete local manufacturing package with:
+
+```sh
+./deploy/generate-manufacturing-files.sh
+```
+
+This generates Gerbers, Excellon drill files, zipped Gerber upload packages, and
+the JLCPCB BOM/CPL files for only the fork boards:
+
+- `manufacturing/gerbers/fork-r0/`
+- `manufacturing/gerbers/fork-r0.zip`
+- `manufacturing/gerbers/fork-r1/`
+- `manufacturing/gerbers/fork-r1.zip`
+- `manufacturing/jlcpcb/fork-r0/`
+- `manufacturing/jlcpcb/fork-r1/`
+
+The Gerber export uses the Dockerized KiCad CLI from
+`ghcr.io/inti-cmnb/kicad10_auto:latest` when Docker is available, and falls back
+to a local `kicad-cli` installation otherwise.
 
 ## JLCPCB Assembly Files
 
@@ -104,9 +127,14 @@ The GitHub Actions workflow in `.github/workflows/placement-site.yml` builds the
 placement site for `fork-r0` and `fork-r1`. On `main` or `master`, it can publish
 the generated `deploy/site/` output to GitHub Pages.
 
-The workflow is triggered by changes to:
+The workflow in `.github/workflows/manufacturing-files.yml` generates the same
+manufacturing package as `./deploy/generate-manufacturing-files.sh` and uploads
+it as a downloadable Actions artifact.
+
+The workflows are triggered by changes to:
 
 - `.github/workflows/placement-site.yml`
+- `.github/workflows/manufacturing-files.yml`
 - `deploy/**`
 - `pcb/fork-r0/**`
 - `pcb/fork-r1/**`

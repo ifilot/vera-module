@@ -16,3 +16,6 @@ _saved_*
 _autosave-*
 fp-info-cache
 ~*.lck
+
+# Generated manufacturing outputs
+manufacturing/gerbers/

@@ -1,0 +1,47 @@
+name: Manufacturing files
+
+on:
+  push:
+    paths:
+      - ".github/workflows/manufacturing-files.yml"
+      - "deploy/**"
+      - "pcb/fork-r0/**"
+      - "pcb/fork-r1/**"
+  pull_request:
+    paths:
+      - ".github/workflows/manufacturing-files.yml"
+      - "deploy/**"
+      - "pcb/fork-r0/**"
+      - "pcb/fork-r1/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate manufacturing files
+        run: bash deploy/generate-manufacturing-files.sh
+
+      - name: Check generated files
+        run: |
+          test -f manufacturing/gerbers/fork-r0.zip
+          test -f manufacturing/gerbers/fork-r1.zip
+          test -f manufacturing/jlcpcb/fork-r0/bom.csv
+          test -f manufacturing/jlcpcb/fork-r0/cpl.csv
+          test -f manufacturing/jlcpcb/fork-r0/missing_lcsc.csv
+          test -f manufacturing/jlcpcb/fork-r1/bom.csv
+          test -f manufacturing/jlcpcb/fork-r1/cpl.csv
+          test -f manufacturing/jlcpcb/fork-r1/missing_lcsc.csv
+
+      - name: Upload manufacturing artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: manufacturing-files
+          path: manufacturing
