@@ -56,7 +56,7 @@ jobs:
           path: deploy/site
 
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/rev4'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: build
     runs-on: ubuntu-latest
     permissions:
