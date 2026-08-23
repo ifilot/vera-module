@@ -1,0 +1,118 @@
+name: Programmer builds
+
+on:
+  push:
+    paths:
+      - ".github/workflows/programmer.yml"
+      - "toolchain/programmer/**"
+  pull_request:
+    paths:
+      - ".github/workflows/programmer.yml"
+      - "toolchain/programmer/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  firmware:
+    name: Firmware (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - board: pico
+            name: Pico 1
+            artifact: pico1
+          - board: pico2
+            name: Pico 2
+            artifact: pico2
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Arm build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes cmake ninja-build gcc-arm-none-eabi libnewlib-arm-none-eabi
+
+      - name: Configure
+        run: >-
+          cmake
+          -S toolchain/programmer/firmware
+          -B build/programmer-${{ matrix.artifact }}
+          -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DPICO_BOARD=${{ matrix.board }}
+
+      - name: Build
+        run: cmake --build build/programmer-${{ matrix.artifact }} --parallel 2
+
+      - name: Check firmware outputs
+        run: |
+          test -s build/programmer-${{ matrix.artifact }}/vera-programmer.bin
+          test -s build/programmer-${{ matrix.artifact }}/vera-programmer.elf
+          test -s build/programmer-${{ matrix.artifact }}/vera-programmer.uf2
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v7
+        with:
+          name: vera-programmer-${{ matrix.artifact }}
+          path: |
+            build/programmer-${{ matrix.artifact }}/vera-programmer.bin
+            build/programmer-${{ matrix.artifact }}/vera-programmer.elf
+            build/programmer-${{ matrix.artifact }}/vera-programmer.uf2
+          if-no-files-found: error
+
+  windows-cli:
+    name: Windows CLI
+    runs-on: windows-latest
+
+    steps:
+      - name: Preserve repository line endings
+        shell: bash
+        run: git config --global core.autocrlf input
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install MSYS2 UCRT64 toolchain
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          pacboy: >-
+            cmake:p
+            ninja:p
+            toolchain:p
+
+      - name: Configure and build
+        shell: msys2 {0}
+        run: |
+          cmake -S toolchain/programmer/cli -B build/programmer-cli -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/programmer-cli
+
+      - name: Run tests
+        shell: msys2 {0}
+        run: ctest --test-dir build/programmer-cli --output-on-failure
+
+      - name: Verify self-contained executable
+        shell: msys2 {0}
+        run: |
+          test -s build/programmer-cli/vera-flash.exe
+          imports="$(objdump -p build/programmer-cli/vera-flash.exe | sed -n 's/.*DLL Name: //p')"
+          printf 'Imported Windows DLLs:\n%s\n' "$imports"
+          unexpected="$(printf '%s\n' "$imports" | grep -Eiv '^(KERNEL32\.dll|api-ms-win-crt-[A-Za-z0-9_-]+\.dll)$' || true)"
+          if test -n "$unexpected"; then
+            printf 'Unexpected DLL dependencies:\n%s\n' "$unexpected" >&2
+            exit 1
+          fi
+
+      - name: Upload Windows CLI
+        uses: actions/upload-artifact@v7
+        with:
+          name: vera-flash-windows-x86_64
+          path: build/programmer-cli/vera-flash.exe
+          if-no-files-found: error

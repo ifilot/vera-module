@@ -1,0 +1,46 @@
+name: FPGA firmware
+
+on:
+  push:
+    paths:
+      - ".github/workflows/fpga-firmware.yml"
+      - "firmware/**"
+      - "toolchain/docker/**"
+  pull_request:
+    paths:
+      - ".github/workflows/fpga-firmware.yml"
+      - "firmware/**"
+      - "toolchain/docker/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build flashable bitstream
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Build with the pinned OSS CAD Suite
+        run: ./firmware/build-docker.sh
+
+      - name: Create checksum
+        run: sha256sum firmware/build/vera.bin > firmware/build/vera.bin.sha256
+
+      - name: Publish VERA firmware
+        uses: actions/upload-artifact@v7
+        with:
+          name: vera-fpga-firmware
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            firmware/build/vera.bin
+            firmware/build/vera.bin.sha256
+            firmware/build/vera-report.json
+            firmware/build/nextpnr.log
+            firmware/build/icetime-conservative.log

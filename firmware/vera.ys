@@ -1,0 +1,26 @@
+read_verilog \
+    source/top.v \
+    source/reset_sync.v \
+    source/main_ram.v \
+    source/dpram.v \
+    source/palette_ram.v \
+    source/sprite_ram.v \
+    source/vram_if.v \
+    source/graphics/composer.v \
+    source/graphics/layer_line_buffer.v \
+    source/graphics/layer_renderer.v \
+    source/graphics/sprite_line_buffer.v \
+    source/graphics/sprite_renderer.v \
+    source/video/video_composite.v \
+    source/video/video_modulator.v \
+    source/video/video_modulator_coslut.v \
+    source/video/video_modulator_sinlut.v \
+    source/video/video_vga.v \
+    source/spi/spictrl.v \
+    source/audio/audio.v \
+    source/audio/dacif.v \
+    source/audio/psg.v \
+    source/audio/audio_fifo.v \
+    source/audio/pcm.v
+
+synth_ice40 -top top -device u -dff -dsp -json build/vera.json

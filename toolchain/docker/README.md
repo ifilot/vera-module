@@ -70,12 +70,17 @@ Commands such as `iverilog`, `yosys`, `nextpnr-ice40`, and `icepack` are
 available on `PATH` inside this shell. Files generated below `/workspace` remain
 in the checked-out repository and are owned by the host user.
 
-## Current FPGA source status
+## Build the VERA firmware
 
-The container is ready for the VERA build, but the checked-in FPGA project still
-contains Lattice Radiant RAM IP and constraints. Until those parts have been
-migrated, use the included example to verify the open-source toolchain; the full
-VERA source is not expected to compile in this container yet.
+The open-source VERA firmware is available under `firmware`. From the repository
+root, build it with:
+
+```sh
+./firmware/build-docker.sh
+```
+
+The build generates `firmware/build/vera.bin` and fails if either nextpnr or the
+conservative IceTime check does not satisfy the 25 MHz clock requirement.
 
 FPGA programming is performed on the host with the existing VERA programmer
 utility. It accepts the raw `.bin` produced by `icepack`, and keeping it outside
