@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
-project(vera_gui VERSION 0.1.0 LANGUAGES CXX)
+
+set(VERA_GUI_VERSION "0.1.0" CACHE STRING "Version shown by the packaged GUI")
+project(vera_gui VERSION "${VERA_GUI_VERSION}" LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -22,3 +24,4 @@ qt_add_executable(vera-gui WIN32
 target_link_libraries(vera-gui PRIVATE Qt6::Widgets Qt6::SerialPort)
 
 install(TARGETS vera-gui RUNTIME DESTINATION .)
+install(FILES assets/vera-gui-icon.ico DESTINATION .)

@@ -1,0 +1,87 @@
+name: GUI installer
+
+on:
+  push:
+    paths:
+      - ".github/workflows/gui-packages.yml"
+      - "VERSION"
+      - "driver/gui/**"
+  pull_request:
+    paths:
+      - ".github/workflows/gui-packages.yml"
+      - "VERSION"
+      - "driver/gui/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gui-installer-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package-windows:
+    name: Windows installer
+    runs-on: windows-2022
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Read release version
+        shell: pwsh
+        run: |
+          "VERA_VERSION=$((Get-Content VERSION -Raw).Trim())" >> $env:GITHUB_ENV
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.8.3"
+          arch: win64_msvc2022_64
+          cache: true
+
+      - name: Configure GUI
+        shell: pwsh
+        run: >-
+          cmake -S driver/gui -B build/gui -A x64
+          -DCMAKE_BUILD_TYPE=Release
+          -DVERA_GUI_VERSION=${{ env.VERA_VERSION }}
+
+      - name: Build GUI
+        run: cmake --build build/gui --config Release --parallel
+
+      - name: Stage GUI and Qt runtime
+        shell: pwsh
+        run: |
+          cmake --install build/gui --config Release --prefix stage
+          windeployqt --release --compiler-runtime --no-translations stage/vera-gui.exe
+          if (-not (Test-Path stage/vera-gui.exe -PathType Leaf)) {
+            throw "The staged GUI executable was not created."
+          }
+
+      - name: Build installer
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+        with:
+          path: driver/gui/packaging/vera-gui.iss
+          options: >-
+            /DSourceDir="${{ github.workspace }}\stage"
+            /DAppVersion=${{ env.VERA_VERSION }}
+            /Odist
+
+      - name: Verify installer
+        shell: pwsh
+        run: |
+          $installer = "dist/vera-test-console-${{ env.VERA_VERSION }}-windows-x86_64-setup.exe"
+          if (-not (Test-Path $installer -PathType Leaf)) {
+            throw "The installer was not created: $installer"
+          }
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: vera-test-console-v${{ env.VERA_VERSION }}-windows-x86_64-installer
+          path: dist/vera-test-console-${{ env.VERA_VERSION }}-windows-x86_64-setup.exe
+          if-no-files-found: error
+          retention-days: 30

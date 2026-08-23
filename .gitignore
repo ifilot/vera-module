@@ -4,6 +4,7 @@
 __pycache__/
 *.py[cod]
 .cache/
+docs/_build/
 
 # KiCad generated backups and local caches
 *-backups/
