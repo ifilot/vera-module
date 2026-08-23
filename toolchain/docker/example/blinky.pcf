@@ -1,0 +1,5 @@
+# Use two pins from the VERA module's iCE40UP5K-SG48 pinout.
+set_io clk25 35
+set_io led 2
+
+set_frequency clk25 25
