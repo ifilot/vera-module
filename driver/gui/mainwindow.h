@@ -6,6 +6,7 @@
 #include <QVector>
 
 class QComboBox;
+class QCloseEvent;
 class QLabel;
 class QProgressBar;
 class QProgressDialog;
@@ -16,6 +17,9 @@ class MainWindow final : public QMainWindow {
 
 public:
   MainWindow();
+
+protected:
+  void closeEvent(QCloseEvent *event) override;
 
 private slots:
   void refreshPorts();
@@ -30,7 +34,12 @@ private slots:
   void runSpriteTest();
   void stopSpriteMotion();
   void advanceSprites();
-  void startAudioTest();
+  void startStereoTest();
+  void advanceStereoTest();
+  void startTetrisSong();
+  void advanceTetrisSong();
+  void startMarioSong();
+  void advanceMarioSong();
   void stopAudio();
   void runTimingInterruptTest();
   void runSdCardTest();
@@ -69,5 +78,11 @@ private:
   QProgressBar *progress_;
   QProgressDialog *operationProgress_ = nullptr;
   QTimer *spriteTimer_;
+  QTimer *songTimer_;
+  QTimer *stereoTimer_;
+  QTimer *marioTimer_;
   QVector<SpriteMotion> sprites_;
+  int songNoteIndex_ = 0;
+  int marioNoteIndex_ = 0;
+  bool stereoLeft_ = true;
 };

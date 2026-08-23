@@ -5,4 +5,17 @@
   <qresource prefix="/icons">
     <file alias="vera-gui-icon.png">assets/vera-gui-icon.png</file>
   </qresource>
+  <qresource prefix="/adwaita">
+    <file alias="refresh.svg">assets/adwaita/refresh.svg</file>
+    <file alias="run.svg">assets/adwaita/run.svg</file>
+    <file alias="play.svg">assets/adwaita/play.svg</file>
+    <file alias="stop.svg">assets/adwaita/stop.svg</file>
+    <file alias="clear.svg">assets/adwaita/clear.svg</file>
+    <file alias="about.svg">assets/adwaita/about.svg</file>
+    <file alias="exit.svg">assets/adwaita/exit.svg</file>
+    <file alias="network.svg">assets/adwaita/network.svg</file>
+    <file alias="speakers.svg">assets/adwaita/speakers.svg</file>
+    <file alias="music.svg">assets/adwaita/music.svg</file>
+    <file alias="video.svg">assets/adwaita/video.svg</file>
+  </qresource>
 </RCC>

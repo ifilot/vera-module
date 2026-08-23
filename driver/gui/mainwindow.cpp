@@ -4,6 +4,7 @@
 #include <QApplication>
 #include <QColor>
 #include <QComboBox>
+#include <QCloseEvent>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QElapsedTimer>
@@ -42,6 +43,137 @@ constexpr quint8 VideoModeVga = 0x01, VideoLayer0 = 0x10;
 constexpr quint8 RegIrqEnable = 0x06, RegIrqStatus = 0x07, RegIrqLine = 0x08;
 constexpr quint8 RegSpiData = 0x1e, RegSpiControl = 0x1f;
 constexpr int ScreenWidth = 640, ScreenHeight = 480;
+
+struct SongNote {
+  int leadFrequency;
+  int bassFrequency;
+  int duration;
+  bool percussion;
+};
+
+// Korobeiniki, commonly known as the Game Boy Tetris Type A melody. Durations
+// are in eighth notes. The second pulse voice follows the lead a fifth below,
+// while the triangle bass and gated noise recreate the GB's four-part texture.
+constexpr SongNote TetrisSong[] = {
+    {659, 165, 2, true},  {494, 247, 1, false}, {523, 165, 1, true},  {587, 247, 2, false},
+    {523, 220, 1, true},  {494, 165, 1, false}, {440, 220, 2, true},  {440, 220, 1, false},
+    {523, 165, 1, true},  {659, 247, 2, false}, {587, 220, 1, true},  {523, 165, 1, false},
+    {494, 247, 3, true},  {523, 165, 1, false}, {587, 247, 2, true},  {659, 220, 2, false},
+    {523, 165, 2, true},  {440, 220, 2, false}, {440, 220, 2, true},  {587, 196, 2, false},
+    {698, 294, 1, true},  {880, 196, 2, false}, {784, 294, 1, true},  {698, 247, 1, false},
+    {659, 165, 3, true},  {523, 247, 1, false}, {659, 165, 2, true},  {587, 247, 1, false},
+    {523, 220, 1, true},  {494, 165, 3, false}, {494, 247, 1, true},  {523, 165, 1, false},
+    {587, 247, 2, true},  {659, 220, 2, false}, {523, 165, 2, true},  {440, 220, 2, false},
+    {440, 220, 2, true},
+};
+constexpr int TetrisSongLength = sizeof(TetrisSong) / sizeof(TetrisSong[0]);
+constexpr int SongEighthNoteMs = 200;
+
+// Super Mario Bros. ground-level layout follows the NES disassembly: two
+// square (pulse) voices, triangle bass, and noise. Durations are sixteenth-note
+// units, including dotted-note timing from the decoded ground-theme melody.
+constexpr SongNote marioNote(int frequency, int duration) {
+  return {frequency, frequency == 0 ? 0 : frequency / 4, duration, false};
+}
+
+constexpr SongNote MarioSong[] = {
+    marioNote(659, 2), marioNote(659, 2), marioNote(0, 2), marioNote(659, 2),
+    marioNote(0, 2), marioNote(523, 2), marioNote(659, 2), marioNote(784, 4),
+    marioNote(0, 4), marioNote(392, 2), marioNote(0, 4), marioNote(523, 6),
+    marioNote(392, 2), marioNote(0, 4), marioNote(330, 6), marioNote(440, 4),
+    marioNote(494, 4), marioNote(466, 2), marioNote(440, 4), marioNote(392, 3),
+    marioNote(659, 3), marioNote(784, 3), marioNote(880, 4), marioNote(698, 2),
+    marioNote(784, 2), marioNote(0, 2), marioNote(659, 4), marioNote(523, 2),
+    marioNote(587, 2), marioNote(494, 6), marioNote(523, 6), marioNote(392, 2),
+    marioNote(0, 4), marioNote(330, 6), marioNote(440, 4), marioNote(494, 4),
+    marioNote(466, 2), marioNote(440, 4), marioNote(392, 3), marioNote(659, 3),
+    marioNote(784, 3), marioNote(880, 4), marioNote(698, 2), marioNote(784, 2),
+    marioNote(0, 2), marioNote(659, 4), marioNote(523, 2), marioNote(587, 2),
+    marioNote(494, 6), marioNote(0, 4), marioNote(784, 2), marioNote(740, 2),
+    marioNote(698, 2), marioNote(622, 4), marioNote(659, 2), marioNote(0, 2),
+    marioNote(415, 2), marioNote(440, 2), marioNote(262, 2), marioNote(0, 2),
+    marioNote(440, 2), marioNote(523, 2), marioNote(587, 2), marioNote(0, 4),
+    marioNote(622, 4), marioNote(0, 2), marioNote(587, 6), marioNote(523, 8),
+    marioNote(0, 8), marioNote(0, 4), marioNote(784, 2), marioNote(740, 2),
+    marioNote(698, 2), marioNote(622, 4), marioNote(659, 2), marioNote(0, 2),
+    marioNote(415, 2), marioNote(440, 2), marioNote(262, 2), marioNote(0, 2),
+    marioNote(440, 2), marioNote(523, 2), marioNote(587, 2), marioNote(0, 4),
+    marioNote(622, 4), marioNote(0, 2), marioNote(587, 6), marioNote(523, 8),
+    marioNote(0, 8), marioNote(523, 2), marioNote(523, 4), marioNote(523, 2),
+    marioNote(0, 2), marioNote(523, 2), marioNote(587, 4), marioNote(659, 2),
+    marioNote(523, 4), marioNote(440, 2), marioNote(392, 8), marioNote(523, 2),
+    marioNote(523, 4), marioNote(523, 2), marioNote(0, 2), marioNote(523, 2),
+    marioNote(587, 2), marioNote(659, 2), marioNote(0, 16), marioNote(523, 2),
+    marioNote(523, 4), marioNote(523, 2), marioNote(0, 2), marioNote(523, 2),
+    marioNote(587, 4), marioNote(659, 2), marioNote(523, 4), marioNote(440, 2),
+    marioNote(392, 8), marioNote(659, 2), marioNote(659, 2), marioNote(0, 2),
+    marioNote(659, 2), marioNote(0, 2), marioNote(523, 2), marioNote(659, 4),
+    marioNote(784, 4), marioNote(0, 4), marioNote(392, 4), marioNote(0, 4),
+    marioNote(523, 6), marioNote(392, 2), marioNote(0, 4), marioNote(330, 6),
+    marioNote(440, 4), marioNote(494, 4), marioNote(466, 2), marioNote(440, 4),
+    marioNote(392, 3), marioNote(659, 3), marioNote(784, 3), marioNote(880, 4),
+    marioNote(698, 2), marioNote(784, 2), marioNote(0, 2), marioNote(659, 4),
+    marioNote(523, 2), marioNote(587, 2), marioNote(494, 6), marioNote(523, 6),
+    marioNote(392, 2), marioNote(0, 4), marioNote(330, 6), marioNote(440, 4),
+    marioNote(494, 4), marioNote(466, 2), marioNote(440, 4), marioNote(392, 3),
+    marioNote(659, 3), marioNote(784, 3), marioNote(880, 4), marioNote(698, 2),
+    marioNote(784, 2), marioNote(0, 2), marioNote(659, 4), marioNote(523, 2),
+    marioNote(587, 2), marioNote(494, 6), marioNote(659, 2), marioNote(523, 4),
+    marioNote(392, 2), marioNote(0, 4), marioNote(415, 4), marioNote(440, 2),
+    marioNote(698, 4), marioNote(698, 2), marioNote(440, 8), marioNote(587, 3),
+    marioNote(880, 3), marioNote(880, 3), marioNote(880, 3), marioNote(784, 3),
+    marioNote(698, 3), marioNote(659, 2), marioNote(523, 4), marioNote(440, 2),
+    marioNote(392, 8), marioNote(659, 2), marioNote(523, 4), marioNote(392, 2),
+    marioNote(0, 4), marioNote(415, 4), marioNote(440, 2), marioNote(698, 4),
+    marioNote(698, 2), marioNote(440, 8), marioNote(494, 2), marioNote(698, 4),
+    marioNote(698, 2), marioNote(698, 3), marioNote(659, 3), marioNote(587, 3),
+    marioNote(523, 2), marioNote(330, 4), marioNote(330, 2), marioNote(262, 8),
+    marioNote(659, 2), marioNote(523, 4), marioNote(392, 2), marioNote(0, 4),
+    marioNote(415, 4), marioNote(440, 2), marioNote(698, 4), marioNote(698, 2),
+    marioNote(440, 8), marioNote(587, 3), marioNote(880, 3), marioNote(880, 3),
+    marioNote(880, 3), marioNote(784, 3), marioNote(698, 3), marioNote(659, 2),
+    marioNote(523, 4), marioNote(440, 2), marioNote(392, 8), marioNote(659, 2),
+    marioNote(523, 4), marioNote(392, 2), marioNote(0, 4), marioNote(415, 4),
+    marioNote(440, 2), marioNote(698, 4), marioNote(698, 2), marioNote(440, 8),
+    marioNote(494, 2), marioNote(698, 4), marioNote(698, 2), marioNote(698, 3),
+    marioNote(659, 3), marioNote(587, 3), marioNote(523, 2), marioNote(330, 4),
+    marioNote(330, 2), marioNote(262, 8), marioNote(523, 2), marioNote(523, 4),
+    marioNote(523, 2), marioNote(0, 2), marioNote(523, 2), marioNote(587, 2),
+    marioNote(659, 2), marioNote(0, 16), marioNote(523, 2), marioNote(523, 4),
+    marioNote(523, 2), marioNote(0, 2), marioNote(523, 2), marioNote(587, 4),
+    marioNote(659, 2), marioNote(523, 4), marioNote(440, 2), marioNote(392, 8),
+    marioNote(659, 2), marioNote(659, 2), marioNote(0, 2), marioNote(659, 2),
+    marioNote(0, 2), marioNote(523, 2), marioNote(659, 4), marioNote(784, 4),
+    marioNote(0, 4), marioNote(392, 4), marioNote(0, 4), marioNote(659, 2),
+    marioNote(523, 4), marioNote(392, 2), marioNote(0, 4), marioNote(415, 4),
+    marioNote(440, 2), marioNote(698, 4), marioNote(698, 2), marioNote(440, 8),
+    marioNote(587, 3), marioNote(880, 3), marioNote(880, 3), marioNote(880, 3),
+    marioNote(784, 3), marioNote(698, 3), marioNote(659, 2), marioNote(523, 4),
+    marioNote(440, 2), marioNote(392, 8), marioNote(659, 2), marioNote(523, 4),
+    marioNote(392, 2), marioNote(0, 4), marioNote(415, 4), marioNote(440, 2),
+    marioNote(698, 4), marioNote(698, 2), marioNote(440, 8), marioNote(494, 2),
+    marioNote(698, 4), marioNote(698, 2), marioNote(698, 3), marioNote(659, 3),
+    marioNote(587, 3), marioNote(523, 2), marioNote(330, 4), marioNote(330, 2),
+    marioNote(262, 8), marioNote(523, 6), marioNote(392, 6), marioNote(330, 4),
+};
+constexpr int MarioSongLength = sizeof(MarioSong) / sizeof(MarioSong[0]);
+constexpr int MarioSixteenthNoteMs = 75;  // NES source tempo: 200 BPM.
+constexpr double PsgSampleRate = 48828.125;
+
+quint16 psgPhaseIncrement(int frequency) {
+  return static_cast<quint16>(std::lround(frequency * 131072.0 / PsgSampleRate));
+}
+
+void setPsgChannel(QByteArray *channels, int channel, int frequency, quint8 volume,
+                   quint8 waveform, quint8 pulseWidth = 0) {
+  const int offset = channel * 4;
+  if (frequency == 0 || volume == 0) return;
+  const quint16 phase = psgPhaseIncrement(frequency);
+  (*channels)[offset] = static_cast<char>(phase & 0xff);
+  (*channels)[offset + 1] = static_cast<char>(phase >> 8);
+  (*channels)[offset + 2] = static_cast<char>((volume & 0x3f) | 0xc0);
+  (*channels)[offset + 3] = static_cast<char>((waveform << 6) | (pulseWidth & 0x3f));
+}
 
 QByteArray makeMonoPattern() {
   QByteArray bytes(ScreenWidth * ScreenHeight / 8, '\0');
@@ -88,11 +220,11 @@ MainWindow::MainWindow() {
   setWindowIcon(QIcon(QStringLiteral(":/icons/vera-gui-icon.png")));
   setMinimumWidth(520);
   auto *fileMenu = menuBar()->addMenu(QStringLiteral("&File"));
-  auto *exitAction = fileMenu->addAction(QStringLiteral("E&xit"));
+  auto *exitAction = fileMenu->addAction(QIcon(QStringLiteral(":/adwaita/exit.svg")), QStringLiteral("E&xit"));
   exitAction->setShortcut(QKeySequence::Quit);
   connect(exitAction, &QAction::triggered, qApp, &QApplication::quit);
   auto *helpMenu = menuBar()->addMenu(QStringLiteral("&Help"));
-  auto *aboutAction = helpMenu->addAction(QStringLiteral("&About"));
+  auto *aboutAction = helpMenu->addAction(QIcon(QStringLiteral(":/adwaita/about.svg")), QStringLiteral("&About"));
   connect(aboutAction, &QAction::triggered, this, [this] { QMessageBox::about(this,
     QStringLiteral("About VERA Test Console"), QStringLiteral("VERA Test Console\n\nQt 6 desktop tools for the VERA FPGA video module.\nThe Arduino Mega is used only as a USB-to-parallel bridge.")); });
 
@@ -113,11 +245,49 @@ MainWindow::MainWindow() {
   bitmapLayout->addWidget(monoButton, 0, 0); bitmapLayout->addWidget(colorButton, 0, 1); bitmapLayout->addWidget(textButton, 1, 0); bitmapLayout->addWidget(cardButton, 1, 1); layout->addWidget(bitmapTests);
   auto *tileTests = new QGroupBox(QStringLiteral("Tile tests"), central); auto *tileLayout = new QHBoxLayout(tileTests); auto *tileButton = new QPushButton(QStringLiteral("16-colour tile pattern"), tileTests); tileLayout->addWidget(tileButton); layout->addWidget(tileTests);
   auto *spriteTests = new QGroupBox(QStringLiteral("Sprite tests"), central); auto *spriteLayout = new QHBoxLayout(spriteTests); auto *spriteButton = new QPushButton(QStringLiteral("Bouncing sprites"), spriteTests); auto *stopSpriteButton = new QPushButton(QStringLiteral("Stop motion"), spriteTests); spriteLayout->addWidget(spriteButton); spriteLayout->addWidget(stopSpriteButton); layout->addWidget(spriteTests);
-  auto *audioTests = new QGroupBox(QStringLiteral("Audio tests"), central); auto *audioLayout = new QHBoxLayout(audioTests); auto *toneButton = new QPushButton(QStringLiteral("Play 440 Hz PSG tone"), audioTests); auto *stopAudioButton = new QPushButton(QStringLiteral("Stop audio"), audioTests); audioLayout->addWidget(toneButton); audioLayout->addWidget(stopAudioButton); layout->addWidget(audioTests);
+  auto *audioTests = new QGroupBox(QStringLiteral("Audio tests"), central); auto *audioLayout = new QHBoxLayout(audioTests); auto *stereoButton = new QPushButton(QStringLiteral("Test left / right stereo"), audioTests); auto *tetrisButton = new QPushButton(QStringLiteral("Play Game Boy Tetris song"), audioTests); auto *marioButton = new QPushButton(QStringLiteral("Play NES Mario Ground theme"), audioTests); auto *stopAudioButton = new QPushButton(QStringLiteral("Stop audio"), audioTests); audioLayout->addWidget(stereoButton); audioLayout->addWidget(tetrisButton); audioLayout->addWidget(marioButton); audioLayout->addWidget(stopAudioButton); layout->addWidget(audioTests);
   auto *systemTests = new QGroupBox(QStringLiteral("System tests"), central); auto *systemLayout = new QHBoxLayout(systemTests); auto *irqButton = new QPushButton(QStringLiteral("Timing and interrupts"), systemTests); auto *sdButton = new QPushButton(QStringLiteral("Probe SD card"), systemTests); systemLayout->addWidget(irqButton); systemLayout->addWidget(sdButton); layout->addWidget(systemTests);
   progress_ = new QProgressBar(central); progress_->setRange(0, 100); progress_->setTextVisible(false); status_ = new QLabel(QStringLiteral("Ready."), central); status_->setWordWrap(true); layout->addWidget(progress_); layout->addWidget(status_); setCentralWidget(central);
+  const auto setAdwaitaIcon = [](QPushButton *button, const char *resource) {
+    button->setIcon(QIcon(QString::fromLatin1(resource)));
+    button->setIconSize(QSize(18, 18));
+  };
+  setAdwaitaIcon(refreshButton, ":/adwaita/refresh.svg");
+  setAdwaitaIcon(connectButton, ":/adwaita/network.svg");
+  setAdwaitaIcon(resetButton, ":/adwaita/clear.svg");
+  setAdwaitaIcon(vgaButton, ":/adwaita/run.svg");
+  setAdwaitaIcon(monoButton, ":/adwaita/video.svg");
+  setAdwaitaIcon(colorButton, ":/adwaita/video.svg");
+  setAdwaitaIcon(textButton, ":/adwaita/video.svg");
+  setAdwaitaIcon(cardButton, ":/adwaita/video.svg");
+  setAdwaitaIcon(tileButton, ":/adwaita/video.svg");
+  setAdwaitaIcon(spriteButton, ":/adwaita/run.svg");
+  setAdwaitaIcon(stopSpriteButton, ":/adwaita/stop.svg");
+  setAdwaitaIcon(stereoButton, ":/adwaita/speakers.svg");
+  setAdwaitaIcon(tetrisButton, ":/adwaita/music.svg");
+  setAdwaitaIcon(marioButton, ":/adwaita/music.svg");
+  setAdwaitaIcon(stopAudioButton, ":/adwaita/stop.svg");
+  setAdwaitaIcon(irqButton, ":/adwaita/run.svg");
+  setAdwaitaIcon(sdButton, ":/adwaita/network.svg");
   spriteTimer_ = new QTimer(this); spriteTimer_->setInterval(1000 / 60);
-  connect(refreshButton, &QPushButton::clicked, this, &MainWindow::refreshPorts); connect(connectButton, &QPushButton::clicked, this, &MainWindow::connectBridge); connect(resetButton, &QPushButton::clicked, this, &MainWindow::resetVera); connect(vgaButton, &QPushButton::clicked, this, &MainWindow::enableVga); connect(monoButton, &QPushButton::clicked, this, &MainWindow::runMonochromeTest); connect(colorButton, &QPushButton::clicked, this, &MainWindow::runColorTest); connect(textButton, &QPushButton::clicked, this, &MainWindow::runTextTest); connect(cardButton, &QPushButton::clicked, this, &MainWindow::uploadPm5544); connect(tileButton, &QPushButton::clicked, this, &MainWindow::runTileTest); connect(spriteButton, &QPushButton::clicked, this, &MainWindow::runSpriteTest); connect(stopSpriteButton, &QPushButton::clicked, this, &MainWindow::stopSpriteMotion); connect(spriteTimer_, &QTimer::timeout, this, &MainWindow::advanceSprites); connect(toneButton, &QPushButton::clicked, this, &MainWindow::startAudioTest); connect(stopAudioButton, &QPushButton::clicked, this, &MainWindow::stopAudio); connect(irqButton, &QPushButton::clicked, this, &MainWindow::runTimingInterruptTest); connect(sdButton, &QPushButton::clicked, this, &MainWindow::runSdCardTest); refreshPorts();
+  songTimer_ = new QTimer(this); songTimer_->setSingleShot(true);
+  stereoTimer_ = new QTimer(this); stereoTimer_->setInterval(1500);
+  marioTimer_ = new QTimer(this); marioTimer_->setSingleShot(true);
+  connect(refreshButton, &QPushButton::clicked, this, &MainWindow::refreshPorts); connect(connectButton, &QPushButton::clicked, this, &MainWindow::connectBridge); connect(resetButton, &QPushButton::clicked, this, &MainWindow::resetVera); connect(vgaButton, &QPushButton::clicked, this, &MainWindow::enableVga); connect(monoButton, &QPushButton::clicked, this, &MainWindow::runMonochromeTest); connect(colorButton, &QPushButton::clicked, this, &MainWindow::runColorTest); connect(textButton, &QPushButton::clicked, this, &MainWindow::runTextTest); connect(cardButton, &QPushButton::clicked, this, &MainWindow::uploadPm5544); connect(tileButton, &QPushButton::clicked, this, &MainWindow::runTileTest); connect(spriteButton, &QPushButton::clicked, this, &MainWindow::runSpriteTest); connect(stopSpriteButton, &QPushButton::clicked, this, &MainWindow::stopSpriteMotion); connect(spriteTimer_, &QTimer::timeout, this, &MainWindow::advanceSprites); connect(stereoButton, &QPushButton::clicked, this, &MainWindow::startStereoTest); connect(stereoTimer_, &QTimer::timeout, this, &MainWindow::advanceStereoTest); connect(tetrisButton, &QPushButton::clicked, this, &MainWindow::startTetrisSong); connect(songTimer_, &QTimer::timeout, this, &MainWindow::advanceTetrisSong); connect(marioButton, &QPushButton::clicked, this, &MainWindow::startMarioSong); connect(marioTimer_, &QTimer::timeout, this, &MainWindow::advanceMarioSong); connect(stopAudioButton, &QPushButton::clicked, this, &MainWindow::stopAudio); connect(irqButton, &QPushButton::clicked, this, &MainWindow::runTimingInterruptTest); connect(sdButton, &QPushButton::clicked, this, &MainWindow::runSdCardTest); refreshPorts();
+  QTimer::singleShot(0, this, [this] { if (ports_->count() != 0) connectBridge(); });
+}
+
+void MainWindow::closeEvent(QCloseEvent *event) {
+  spriteTimer_->stop();
+  songTimer_->stop();
+  stereoTimer_->stop();
+  marioTimer_->stop();
+  if (bridge_.isOpen()) {
+    QString error;
+    bridge_.reset(&error);
+    bridge_.close();
+  }
+  event->accept();
 }
 
 void MainWindow::refreshPorts() { const QString previous = ports_->currentData().toString(); ports_->clear(); for (const QSerialPortInfo &info : QSerialPortInfo::availablePorts()) ports_->addItem(QStringLiteral("%1 — %2").arg(info.portName(), info.description()), info.portName()); const int index = ports_->findData(previous); if (index >= 0) ports_->setCurrentIndex(index); }
@@ -127,7 +297,7 @@ bool MainWindow::writeRegister(quint8 reg, quint8 value) { QString error; if (br
 bool MainWindow::readRegister(quint8 reg, quint8 *value) { QString error; if (bridge_.readRegister(reg, value, &error)) return true; setStatus(error, true); return false; }
 
 QString MainWindow::readVersion() { quint8 originalCtrl = 0; QString error; if (!bridge_.readRegister(RegCtrl, &originalCtrl, &error)) return QStringLiteral("Read failed"); QByteArray id; for (quint8 bank = 60; bank <= 63; ++bank) { if (!bridge_.writeRegister(RegCtrl, static_cast<quint8>((bank << 1) | (originalCtrl & 1)), &error)) break; for (quint8 offset = 0; offset < 4; ++offset) { quint8 value = 0; const quint8 physicalOffset = (offset + 3) & 3; if (!bridge_.readRegister(RegDcVideo + physicalOffset, &value, &error) || value == 0) goto done; id.append(static_cast<char>(value)); } } done: bridge_.writeRegister(RegCtrl, originalCtrl, &error); return id.isEmpty() ? QStringLiteral("Read failed") : QString::fromLatin1(id); }
-void MainWindow::resetVera() { if (!requireBridge()) return; QString error; if (!bridge_.reset(&error)) { setStatus(error, true); return; } version_->setText(readVersion()); setStatus(QStringLiteral("VERA reset complete.")); }
+void MainWindow::resetVera() { if (!requireBridge()) return; songTimer_->stop(); stereoTimer_->stop(); marioTimer_->stop(); QString error; if (!bridge_.reset(&error)) { setStatus(error, true); return; } version_->setText(readVersion()); setStatus(QStringLiteral("VERA reset complete.")); }
 void MainWindow::enableVga() { if (!requireBridge()) return; if (writeRegister(RegCtrl, 0) && writeRegister(RegDcVideo, VideoModeVga)) setStatus(QStringLiteral("640 × 480 @ 60 Hz VGA enabled; layers are off.")); }
 
 bool MainWindow::writePalette(const QVector<QRgb> &colors) { QByteArray palette; palette.reserve(colors.size() * 2); for (QRgb color : colors) { const QColor rgb(color); palette.append(static_cast<char>(((rgb.green() >> 4) << 4) | (rgb.blue() >> 4))); palette.append(static_cast<char>(rgb.red() >> 4)); } return writeBuffer(PaletteBase, palette, QStringLiteral("palette")); }
@@ -207,22 +377,105 @@ void MainWindow::advanceSprites() {
   }
 }
 
-void MainWindow::startAudioTest() {
+void MainWindow::startStereoTest() {
   if (!requireBridge()) return;
-  // VERA's PSG runs at the I2S sample cadence (~48.8 kHz).  A phase increment
-  // of 1181 generates approximately 440 Hz with a triangle waveform.
-  QByteArray channels(64, '\0');
-  channels[0] = static_cast<char>(1181 & 0xff);
-  channels[1] = static_cast<char>(1181 >> 8);
-  channels[2] = static_cast<char>(0xff);  // Volume 63, left and right enabled.
-  channels[3] = static_cast<char>(0x80);  // Triangle waveform.
+  songTimer_->stop();
+  marioTimer_->stop();
+  stereoTimer_->stop();
   progress_->setValue(0);
-  if (writeBuffer(AudioPsgBase, channels, QStringLiteral("PSG tone")))
-    setStatus(QStringLiteral("PSG audio test active: continuous 440 Hz triangle tone. Use Stop audio to mute."));
+  if (!writeBuffer(AudioPsgBase, QByteArray(64, '\0'), QStringLiteral("stereo PSG setup"))) return;
+  stereoLeft_ = true;
+  stereoTimer_->start();
+  advanceStereoTest();
+}
+
+void MainWindow::advanceStereoTest() {
+  if (!bridge_.isOpen()) { stereoTimer_->stop(); return; }
+  QByteArray channel(4, '\0');
+  const quint16 phase = psgPhaseIncrement(440);
+  channel[0] = static_cast<char>(phase & 0xff);
+  channel[1] = static_cast<char>(phase >> 8);
+  channel[2] = static_cast<char>(0x3f | (stereoLeft_ ? 0x40 : 0x80));
+  channel[3] = static_cast<char>(0x80);  // Triangle waveform.
+  QString error;
+  if (!bridge_.writeVram(AudioPsgBase, channel, &error)) {
+    stereoTimer_->stop();
+    setStatus(error, true);
+    return;
+  }
+  setStatus(QStringLiteral("Stereo test: 440 Hz on the %1 channel.").arg(stereoLeft_ ? QStringLiteral("LEFT") : QStringLiteral("RIGHT")));
+  stereoLeft_ = !stereoLeft_;
+}
+
+void MainWindow::startTetrisSong() {
+  if (!requireBridge()) return;
+  songTimer_->stop();
+  stereoTimer_->stop();
+  marioTimer_->stop();
+  progress_->setValue(0);
+  if (!writeBuffer(AudioPsgBase, QByteArray(64, '\0'), QStringLiteral("PSG setup"))) return;
+  songNoteIndex_ = 0;
+  advanceTetrisSong();
+}
+
+void MainWindow::advanceTetrisSong() {
+  if (!bridge_.isOpen()) { songTimer_->stop(); return; }
+  const SongNote &note = TetrisSong[songNoteIndex_];
+  QByteArray channels(16, '\0');
+  const int harmonyFrequency = static_cast<int>(std::lround(note.leadFrequency * 2.0 / 3.0));
+  setPsgChannel(&channels, 0, note.leadFrequency, 48, 0, 32);       // 50% pulse lead.
+  setPsgChannel(&channels, 1, harmonyFrequency, 27, 0, 16);          // 25% pulse harmony.
+  setPsgChannel(&channels, 2, note.bassFrequency, 42, 2);            // Triangle bass.
+  if (note.percussion) setPsgChannel(&channels, 3, 4096, 19, 3);     // Short noise hit.
+  QString error;
+  if (!bridge_.writeVram(AudioPsgBase, channels, &error)) {
+    songTimer_->stop();
+    setStatus(error, true);
+    return;
+  }
+  songNoteIndex_ = (songNoteIndex_ + 1) % TetrisSongLength;
+  songTimer_->start(note.duration * SongEighthNoteMs);
+  setStatus(QStringLiteral("Game Boy-style Tetris Type A is playing (loops). Use Stop audio to mute."));
+}
+
+void MainWindow::startMarioSong() {
+  if (!requireBridge()) return;
+  songTimer_->stop();
+  stereoTimer_->stop();
+  marioTimer_->stop();
+  progress_->setValue(0);
+  if (!writeBuffer(AudioPsgBase, QByteArray(64, '\0'), QStringLiteral("NES PSG setup"))) return;
+  marioNoteIndex_ = 0;
+  advanceMarioSong();
+}
+
+void MainWindow::advanceMarioSong() {
+  if (!bridge_.isOpen()) { marioTimer_->stop(); return; }
+  const SongNote &note = MarioSong[marioNoteIndex_];
+  QByteArray channels(16, '\0');
+  const int harmonyFrequency = note.leadFrequency == 0 ? 0 : static_cast<int>(std::lround(note.leadFrequency * 2.0 / 3.0));
+  setPsgChannel(&channels, 0, note.leadFrequency, 50, 0, 32);       // NES pulse 1 lead.
+  setPsgChannel(&channels, 1, harmonyFrequency, 30, 0, 16);          // NES pulse 2 accompaniment.
+  setPsgChannel(&channels, 2, note.bassFrequency, 43, 2);            // NES triangle bass.
+  const bool percussion = note.leadFrequency != 0 &&
+                           (marioNoteIndex_ % 4 == 0 || note.duration >= 4);
+  if (percussion) setPsgChannel(&channels, 3, 4096, 20, 3);           // NES-style noise hit.
+  QString error;
+  if (!bridge_.writeVram(AudioPsgBase, channels, &error)) {
+    marioTimer_->stop();
+    setStatus(error, true);
+    return;
+  }
+  marioNoteIndex_ = (marioNoteIndex_ + 1) % MarioSongLength;
+  marioTimer_->start(note.duration * MarioSixteenthNoteMs);
+  setStatus(QStringLiteral("NES-style Super Mario Bros. Ground Level theme is playing (loops). Use Stop audio to mute."));
 }
 
 void MainWindow::stopAudio() {
   if (!requireBridge()) return;
+  songTimer_->stop();
+  stereoTimer_->stop();
+  marioTimer_->stop();
   progress_->setValue(0);
   if (writeBuffer(AudioPsgBase, QByteArray(64, '\0'), QStringLiteral("audio stop")))
     setStatus(QStringLiteral("PSG channels muted."));
