@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Build with the pinned OSS CAD Suite
-        run: ./firmware/build-docker.sh
+        run: bash firmware/build-docker.sh
 
       - name: Create checksum
         run: sha256sum firmware/build/vera.bin > firmware/build/vera.bin.sha256

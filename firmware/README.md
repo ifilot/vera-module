@@ -8,7 +8,7 @@ nextpnr, and Project IceStorm flow.
 From the repository root, run:
 
 ```sh
-./firmware/build-docker.sh
+bash firmware/build-docker.sh
 ```
 
 The command builds the pinned toolchain image when necessary, synthesizes the
