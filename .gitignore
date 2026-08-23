@@ -20,3 +20,4 @@ fp-info-cache
 # Generated manufacturing outputs
 manufacturing/gerbers/
 .history
+build

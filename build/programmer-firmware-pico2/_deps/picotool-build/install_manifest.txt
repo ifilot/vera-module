@@ -1,7 +1,0 @@
-/mnt/d/PROGRAMMING/KiCAD/vera-module/build/programmer-firmware-pico2/_deps/picotool/picotool
-/mnt/d/PROGRAMMING/KiCAD/vera-module/build/programmer-firmware-pico2/_deps/picotool/picotoolTargets.cmake
-/mnt/d/PROGRAMMING/KiCAD/vera-module/build/programmer-firmware-pico2/_deps/picotool/picotoolTargets-release.cmake
-/mnt/d/PROGRAMMING/KiCAD/vera-module/build/programmer-firmware-pico2/_deps/picotool/picotoolConfig.cmake
-/mnt/d/PROGRAMMING/KiCAD/vera-module/build/programmer-firmware-pico2/_deps/picotool/picotoolConfigVersion.cmake
-/mnt/d/PROGRAMMING/KiCAD/vera-module/build/programmer-firmware-pico2/_deps/picotool/enc_bootloader.elf
-/mnt/d/PROGRAMMING/KiCAD/vera-module/build/programmer-firmware-pico2/_deps/picotool/enc_bootloader_mbedtls.elf

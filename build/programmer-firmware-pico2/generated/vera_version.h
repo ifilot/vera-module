@@ -1,8 +1,0 @@
-#ifndef VERA_VERSION_H
-#define VERA_VERSION_H
-
-#define VERA_VERSION_STRING "0.1.0"
-#define VERA_VERSION_TAG "v0.1.0"
-#define VERA_PROGRAMMER_ID "VERA-PROG-v0.1.0"
-
-#endif
