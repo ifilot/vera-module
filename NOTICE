@@ -1,0 +1,24 @@
+Open VERA Module
+Copyright and attribution notice
+
+This is a community-maintained fork of the original VERA Module created by
+Frank van den Hoef.  The original VERA Module was published under the MIT
+License.  Its licence and copyright notice are retained in LICENSE.
+
+The Git history records material contributions to the upstream project by:
+
+  - Frank van den Hoef
+  - jburks
+  - Natt Akuma
+  - MooingLemur
+
+Maintained-fork contributions are credited to Ivo Filot and later
+contributors in the Git history.  This notice is an attribution record, not a
+claim that any one person owns all material in the repository.
+
+The VERA name and original design history are acknowledged with respect.
+"Open VERA Module" is an independent, community-maintained fork and does not
+claim endorsement by or affiliation with Frank van den Hoef or other upstream
+contributors.
+
+See LICENSING.md for the component licence map.
