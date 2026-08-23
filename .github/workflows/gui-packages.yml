@@ -4,11 +4,13 @@ on:
   push:
     paths:
       - ".github/workflows/gui-packages.yml"
+      - "NUL"
       - "VERSION"
       - "driver/gui/**"
   pull_request:
     paths:
       - ".github/workflows/gui-packages.yml"
+      - "NUL"
       - "VERSION"
       - "driver/gui/**"
   workflow_dispatch:
@@ -40,6 +42,7 @@ jobs:
         with:
           version: "6.8.3"
           arch: win64_msvc2022_64
+          modules: qtserialport
           cache: true
 
       - name: Configure GUI
@@ -47,7 +50,7 @@ jobs:
         run: >-
           cmake -S driver/gui -B build/gui -A x64
           -DCMAKE_BUILD_TYPE=Release
-          -DVERA_GUI_VERSION=${{ env.VERA_VERSION }}
+          "-DVERA_GUI_VERSION=${{ env.VERA_VERSION }}"
 
       - name: Build GUI
         run: cmake --build build/gui --config Release --parallel

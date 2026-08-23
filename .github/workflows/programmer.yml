@@ -4,11 +4,13 @@ on:
   push:
     paths:
       - ".github/workflows/programmer.yml"
+      - "NUL"
       - "VERSION"
       - "toolchain/programmer/**"
   pull_request:
     paths:
       - ".github/workflows/programmer.yml"
+      - "NUL"
       - "VERSION"
       - "toolchain/programmer/**"
   workflow_dispatch:
