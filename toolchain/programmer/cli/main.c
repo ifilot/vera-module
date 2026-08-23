@@ -3,10 +3,12 @@
 #include <string.h>
 
 #include "programmer.h"
+#include "vera_version.h"
 
 static void usage(const char *program) {
     printf("Usage: %s <COM port> <firmware.bin>\n", program);
     printf("       %s --self-test\n", program);
+    printf("       %s --version\n", program);
 }
 
 static bool read_file(const char *path, uint8_t **data, size_t *size) {
@@ -59,6 +61,10 @@ static int self_test(void) {
 }
 
 int main(int argc, char **argv) {
+    if (argc == 2 && strcmp(argv[1], "--version") == 0) {
+        printf("vera-flash %s\n", VERA_VERSION_TAG);
+        return EXIT_SUCCESS;
+    }
     if (argc == 2 && strcmp(argv[1], "--self-test") == 0) {
         return self_test();
     }

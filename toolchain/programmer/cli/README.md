@@ -22,6 +22,12 @@ Flash a binary by passing the programmer's Windows COM port:
 vera-flash.exe COM3 vera.bin
 ```
 
+Print the ecosystem version with:
+
+```console
+vera-flash.exe --version
+```
+
 The CLI rejects devices that do not report the expected VERA programmer ID. It
 holds the FPGA in reset, resets and erases the SPI flash, verifies each erased
 block, writes 4 KiB sectors with CRC checks, reads all pages back for a bytewise

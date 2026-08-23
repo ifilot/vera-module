@@ -1,6 +1,8 @@
 #ifndef VERA_PROGRAMMER_CONFIG_H
 #define VERA_PROGRAMMER_CONFIG_H
 
+#include "vera_version.h"
+
 #define PIN_MISO   16
 #define PIN_SEL    17
 #define PIN_SCK    18
@@ -28,8 +30,7 @@
 #define PAGE_SIZE   256
 #define BUFFER_SIZE 256
 
-// READINFO returns exactly 16 bytes over USB CDC.
-#define BOARD_ID "VERA-PROG-v0.1.0"
-#define BOARD_ID_LENGTH 16
+#define BOARD_ID VERA_PROGRAMMER_ID
+#define BOARD_ID_LENGTH (sizeof(BOARD_ID) - 1u)
 
 #endif // VERA_PROGRAMMER_CONFIG_H

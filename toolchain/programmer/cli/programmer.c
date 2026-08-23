@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "vera_version.h"
+
 #define COMMAND_SIZE 8u
 #define RESPONSE_TIMEOUT_MS 10000u
 
@@ -21,7 +23,7 @@ static bool send_command(serial_port_t *port, const char command[COMMAND_SIZE]) 
 }
 
 static bool identify_programmer(serial_port_t *port) {
-    static const char expected_id[] = "VERA-PROG-v0.1.0";
+    static const char expected_id[] = VERA_PROGRAMMER_ID;
     char id[sizeof(expected_id)] = {0};
 
     if (!send_command(port, "READINFO") ||

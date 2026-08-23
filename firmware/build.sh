@@ -6,6 +6,8 @@ cd "${firmware_dir}"
 
 mkdir -p build
 
+bash generate-version.sh
+
 yosys -l build/yosys.log vera.ys
 
 nextpnr-ice40 \

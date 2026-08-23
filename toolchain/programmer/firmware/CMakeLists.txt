@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 
+include("${CMAKE_CURRENT_LIST_DIR}/../version.cmake")
+
 set(VERA_PICO_SDK_VERSION "2.2.0" CACHE STRING "Pico SDK version to download")
 set(PICO_BOARD pico CACHE STRING "Pico board type (pico or pico2)")
 
@@ -27,12 +29,20 @@ endif()
 
 include(${PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
-project(vera-programmer C CXX ASM)
+project(vera-programmer VERSION "${VERA_VERSION}" LANGUAGES C CXX ASM)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
 pico_sdk_init()
+
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/generated")
+configure_file(
+  "${CMAKE_CURRENT_LIST_DIR}/../version.h.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/generated/vera_version.h"
+  @ONLY
+)
+configure_file("${VERA_VERSION_FILE}" "${CMAKE_CURRENT_BINARY_DIR}/VERSION" COPYONLY)
 
 add_executable(vera-programmer
   main.c
@@ -40,7 +50,10 @@ add_executable(vera-programmer
   flash.c
 )
 
-target_include_directories(vera-programmer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(vera-programmer PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  "${CMAKE_CURRENT_BINARY_DIR}/generated"
+)
 
 target_link_libraries(vera-programmer
   pico_stdlib
@@ -50,4 +63,5 @@ target_link_libraries(vera-programmer
 # Use USB CDC for the programmer protocol; the UART remains available to VERA.
 pico_enable_stdio_usb(vera-programmer 1)
 pico_enable_stdio_uart(vera-programmer 0)
+pico_set_program_version(vera-programmer "${PROJECT_VERSION}")
 pico_add_extra_outputs(vera-programmer)

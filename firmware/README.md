@@ -23,19 +23,42 @@ firmware/build/vera.bin
 If the pinned OSS CAD Suite is already active, run:
 
 ```sh
-./firmware/build.sh
+bash firmware/build.sh
 ```
 
 Generated files and detailed logs are written to `firmware/build/`.
 
+## Firmware identification
+
+The firmware identifies itself with a single null-terminated ASCII string
+generated from the repository's root `VERSION` file. Select display-controller
+banks 60 through 63 in turn by writing the bank number to bits 6–1 of `CTRL`
+(`0x05`). Read registers `0x09` through `0x0C` from each bank and concatenate
+the results:
+
+| DCSEL | `0x09` | `0x0A` | `0x0B` | `0x0C` |
+|------:|:------:|:------:|:------:|:------:|
+| 60 | `V` | `E` | `R` | `A` |
+| 61 | space | `v` | `0` | `.` |
+| 62 | `1` | `.` | `0` | NUL |
+| 63 | NUL | NUL | NUL | NUL |
+
+For the initial ecosystem version, this produces `VERA v0.1.0`. The identifier
+can contain at most 15 ASCII characters plus its terminator. Preserve bit 0
+(`ADDRSEL`) when changing `DCSEL`, and restore the original `CTRL` value after
+reading the identification. Writes to the four display-controller registers
+are ignored while one of these identification banks is selected.
+
 ## Download a build from GitHub Actions
 
-Every push or pull request that changes the FPGA firmware or its pinned
-toolchain runs the **FPGA firmware** workflow. A successful run publishes the
-`vera-fpga-firmware` artifact. Download and extract that artifact to obtain:
+Every push or pull request that changes the FPGA firmware, ecosystem version,
+or pinned toolchain runs the **FPGA firmware** workflow. A successful run
+publishes an artifact such as `vera-fpga-firmware-v0.1.0`. Download and extract
+that artifact to obtain:
 
 - `vera.bin`, the bitstream to flash to VERA;
 - `vera.bin.sha256`, its SHA-256 checksum;
+- `VERSION`, the ecosystem version used for the build;
 - the nextpnr and IceTime timing reports used to accept the build.
 
 The artifact is retained by GitHub for 30 days. A build is not published when

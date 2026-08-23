@@ -4,10 +4,12 @@ on:
   push:
     paths:
       - ".github/workflows/programmer.yml"
+      - "VERSION"
       - "toolchain/programmer/**"
   pull_request:
     paths:
       - ".github/workflows/programmer.yml"
+      - "VERSION"
       - "toolchain/programmer/**"
   workflow_dispatch:
 
@@ -32,6 +34,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Read ecosystem version
+        run: echo "VERA_VERSION=$(tr -d '\r\n' < VERSION)" >> "$GITHUB_ENV"
 
       - name: Install Arm build tools
         run: |
@@ -59,11 +64,12 @@ jobs:
       - name: Upload firmware
         uses: actions/upload-artifact@v7
         with:
-          name: vera-programmer-${{ matrix.artifact }}
+          name: vera-programmer-${{ matrix.artifact }}-v${{ env.VERA_VERSION }}
           path: |
             build/programmer-${{ matrix.artifact }}/vera-programmer.bin
             build/programmer-${{ matrix.artifact }}/vera-programmer.elf
             build/programmer-${{ matrix.artifact }}/vera-programmer.uf2
+            build/programmer-${{ matrix.artifact }}/VERSION
           if-no-files-found: error
 
   windows-cli:
@@ -77,6 +83,10 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Read ecosystem version
+        shell: bash
+        run: echo "VERA_VERSION=$(tr -d '\r\n' < VERSION)" >> "$GITHUB_ENV"
 
       - name: Install MSYS2 UCRT64 toolchain
         uses: msys2/setup-msys2@v2
@@ -113,6 +123,8 @@ jobs:
       - name: Upload Windows CLI
         uses: actions/upload-artifact@v7
         with:
-          name: vera-flash-windows-x86_64
-          path: build/programmer-cli/vera-flash.exe
+          name: vera-flash-windows-x86_64-v${{ env.VERA_VERSION }}
+          path: |
+            build/programmer-cli/vera-flash.exe
+            build/programmer-cli/VERSION
           if-no-files-found: error

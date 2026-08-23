@@ -58,3 +58,7 @@ first echoes the request and then writes any command-specific response.
 | `HOLDFPGA` | Hold FPGA in reset | `00` |
 
 Numeric command suffixes are hexadecimal.
+
+The identity version comes from the repository's root `VERSION` file. The
+initial ecosystem release is `v0.1.0`; changing `VERSION` updates both the Pico
+firmware identity and the matching host CLI expectation.

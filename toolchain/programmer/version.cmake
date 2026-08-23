@@ -1,0 +1,13 @@
+get_filename_component(VERA_REPOSITORY_ROOT
+  "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
+set(VERA_VERSION_FILE "${VERA_REPOSITORY_ROOT}/VERSION")
+
+if(NOT EXISTS "${VERA_VERSION_FILE}")
+  message(FATAL_ERROR "Missing repository VERSION file: ${VERA_VERSION_FILE}")
+endif()
+
+file(STRINGS "${VERA_VERSION_FILE}" VERA_VERSION LIMIT_COUNT 1)
+if(NOT VERA_VERSION MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+$")
+  message(FATAL_ERROR
+    "VERSION must contain MAJOR.MINOR.PATCH, got '${VERA_VERSION}'")
+endif()

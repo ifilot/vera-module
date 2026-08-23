@@ -1,4 +1,4 @@
-read_verilog \
+read_verilog -Ibuild \
     source/top.v \
     source/reset_sync.v \
     source/main_ram.v \

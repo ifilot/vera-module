@@ -4,11 +4,13 @@ on:
   push:
     paths:
       - ".github/workflows/fpga-firmware.yml"
+      - "VERSION"
       - "firmware/**"
       - "toolchain/docker/**"
   pull_request:
     paths:
       - ".github/workflows/fpga-firmware.yml"
+      - "VERSION"
       - "firmware/**"
       - "toolchain/docker/**"
   workflow_dispatch:
@@ -26,6 +28,9 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v6
 
+      - name: Read ecosystem version
+        run: echo "VERA_VERSION=$(tr -d '\r\n' < VERSION)" >> "$GITHUB_ENV"
+
       - name: Build with the pinned OSS CAD Suite
         run: bash firmware/build-docker.sh
 
@@ -35,12 +40,13 @@ jobs:
       - name: Publish VERA firmware
         uses: actions/upload-artifact@v7
         with:
-          name: vera-fpga-firmware
+          name: vera-fpga-firmware-v${{ env.VERA_VERSION }}
           if-no-files-found: error
           retention-days: 30
           path: |
             firmware/build/vera.bin
             firmware/build/vera.bin.sha256
+            firmware/build/VERSION
             firmware/build/vera-report.json
             firmware/build/nextpnr.log
             firmware/build/icetime-conservative.log

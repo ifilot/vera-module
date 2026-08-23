@@ -10,8 +10,6 @@
 
 void programmer_write_id(void) {
     static const char board_id[] = BOARD_ID;
-    _Static_assert(sizeof(board_id) - 1 == BOARD_ID_LENGTH,
-                   "BOARD_ID must be exactly 16 bytes");
     tud_cdc_write(board_id, BOARD_ID_LENGTH);
     tud_cdc_write_flush();
 }
