@@ -38,7 +38,15 @@ while connecting it, then copy that file to the mounted `RPI-RP2` drive.
 | SPI chip select | 17 |
 | SPI clock | 18 |
 | SPI MOSI | 19 |
-| Status LED | 25 |
+| Pico boot-status LED | 25 |
+| PCB READ LED (D2) | 26 |
+| PCB WRITE LED (D3) | 27 |
+
+The PCB LEDs are active-high. READ is illuminated while the programmer is
+reading or verifying flash data; WRITE is illuminated while it is receiving or
+modifying flash data. The Pico's onboard LED reflects the last FPGA boot
+result: it is off while the FPGA is held in reset or when `CDONE` stays low,
+and on after a successful boot.
 
 ## USB commands
 
@@ -58,6 +66,11 @@ first echoes the request and then writes any command-specific response.
 | `HOLDFPGA` | Hold FPGA in reset | `00` |
 
 Numeric command suffixes are hexadecimal.
+
+The firmware rejects non-hexadecimal numeric suffixes instead of interpreting
+them as address zero. It also bounds sector-data reception and flash busy waits,
+and reports erase/program failures through the existing command responses so
+the protocol remains compatible with the CLI.
 
 The identity version comes from the repository's root `VERSION` file. The
 initial ecosystem release is `v0.1.0`; changing `VERSION` updates both the Pico

@@ -32,6 +32,9 @@ original project history is preserved in Git and is not rewritten here.
 
 - Added an open-source Raspberry Pi Pico programmer, its command-line tool,
   firmware, and associated KiCad design files.
+- Synchronized the programmer firmware with the PCB's READ and WRITE LEDs,
+  added bounded flash-operation failure handling, and made the CLI verify the
+  target W25Q16 JEDEC identity before erasing.
 - Added version-aware programmer build and release automation.
 - Added the Arduino Mega driver/demo, including font assets and build
   instructions, to the maintained repository.

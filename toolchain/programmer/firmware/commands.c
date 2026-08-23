@@ -1,26 +1,44 @@
 #include "commands.h"
 
-#include <stdlib.h>
-#include <string.h>
-
 #include <pico/stdlib.h>
 #include <tusb.h>
 
 #include "programmer_config.h"
 
-uint8_t command_get_uint8(const char *instruction, uint8_t offset) {
-    char buffer[3];
-    buffer[0] = instruction[offset];
-    buffer[1] = instruction[offset + 1];
-    buffer[2] = '\0';
-    return (uint8_t)strtoul(buffer, NULL, 16);
+static bool hex_nibble(char character, uint8_t *value) {
+    if (character >= '0' && character <= '9') {
+        *value = (uint8_t)(character - '0');
+        return true;
+    }
+    if (character >= 'A' && character <= 'F') {
+        *value = (uint8_t)(character - 'A' + 10);
+        return true;
+    }
+    return false;
 }
 
-uint16_t command_get_uint16(const char *instruction, uint8_t offset) {
-    char buffer[5];
-    memcpy(buffer, &instruction[offset], 4);
-    buffer[4] = '\0';
-    return (uint16_t)strtoul(buffer, NULL, 16);
+bool command_get_uint8(const char *instruction, uint8_t offset, uint8_t *value) {
+    uint8_t high;
+    uint8_t low;
+    if (!hex_nibble(instruction[offset], &high) ||
+        !hex_nibble(instruction[offset + 1], &low)) {
+        return false;
+    }
+    *value = (uint8_t)((high << 4) | low);
+    return true;
+}
+
+bool command_get_uint16(const char *instruction, uint8_t offset, uint16_t *value) {
+    uint16_t result = 0;
+    for (uint8_t i = 0; i < 4; i++) {
+        uint8_t nibble;
+        if (!hex_nibble(instruction[offset + i], &nibble)) {
+            return false;
+        }
+        result = (uint16_t)((result << 4) | nibble);
+    }
+    *value = result;
+    return true;
 }
 
 void command_echo(const char *instruction, uint8_t size) {
@@ -49,12 +67,12 @@ void fpga_release_and_check_boot(void) {
         tud_task();
     }
 
-    gpio_put(PIN_LED, cdone);
+    gpio_put(PIN_LED_BOOT, cdone ? LED_ON : LED_OFF);
 }
 
 void fpga_reset_hold(void) {
     gpio_put(PIN_CRESET, 0);
-    gpio_put(PIN_LED, 0);
+    gpio_put(PIN_LED_BOOT, LED_OFF);
 
     if (tud_cdc_connected()) {
         tud_cdc_write_char(0);

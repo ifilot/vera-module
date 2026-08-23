@@ -8,6 +8,9 @@
 
 #define COMMAND_SIZE 8u
 #define RESPONSE_TIMEOUT_MS 10000u
+#define WINBOND_MANUFACTURER_ID 0xEFu
+#define W25Q16_MEMORY_TYPE      0x40u
+#define W25Q16_CAPACITY_ID      0x15u
 
 static bool send_command(serial_port_t *port, const char command[COMMAND_SIZE]) {
     char echo[COMMAND_SIZE];
@@ -49,6 +52,26 @@ static bool hold_fpga(serial_port_t *port) {
 
 static bool reset_flash(serial_port_t *port) {
     return send_command(port, "RESETCHP");
+}
+
+static bool identify_flash(serial_port_t *port) {
+    uint8_t id[3];
+    if (!send_command(port, "DEVIDSST") ||
+        !serial_port_read(port, id, sizeof(id), RESPONSE_TIMEOUT_MS)) {
+        return false;
+    }
+
+    printf("SPI flash JEDEC ID: %02X %02X %02X\n", id[0], id[1], id[2]);
+    if (id[0] != WINBOND_MANUFACTURER_ID ||
+        id[1] != W25Q16_MEMORY_TYPE || id[2] != W25Q16_CAPACITY_ID) {
+        fprintf(stderr,
+                "Expected the board's W25Q16 flash (JEDEC EF 40 15), but "
+                "received %02X %02X %02X. Check the programmer cable and "
+                "FPGA reset.\n",
+                id[0], id[1], id[2]);
+        return false;
+    }
+    return true;
 }
 
 static bool erase_and_check(serial_port_t *port, size_t padded_size) {
@@ -188,6 +211,7 @@ bool programmer_flash_image(serial_port_t *port, const uint8_t *image,
     bool success = identify_programmer(port) &&
                    hold_fpga(port) &&
                    reset_flash(port) &&
+                   identify_flash(port) &&
                    erase_and_check(port, padded_size) &&
                    write_sectors(port, padded_image, padded_size) &&
                    verify_pages(port, padded_image, padded_size) &&

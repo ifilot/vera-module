@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include <hardware/spi.h>
@@ -11,6 +12,7 @@
 
 static char instruction[8];
 static uint8_t instruction_position;
+static bool cdc_was_connected;
 
 static void parse_instruction(void);
 static void programmer_init(void);
@@ -19,7 +21,13 @@ int main(void) {
     programmer_init();
 
     while (true) {
-        if (tud_cdc_connected() && tud_cdc_available()) {
+        bool cdc_connected = tud_cdc_connected();
+        if (!cdc_connected && cdc_was_connected) {
+            instruction_position = 0;
+        }
+        cdc_was_connected = cdc_connected;
+
+        if (cdc_connected && tud_cdc_available()) {
             char character = tud_cdc_read_char();
 
             if ((character >= '0' && character <= '9') ||
@@ -38,22 +46,29 @@ int main(void) {
 }
 
 static void parse_instruction(void) {
+    uint8_t argument8;
+    uint16_t argument16;
+
     command_echo(instruction, sizeof(instruction));
 
     if (command_matches(instruction, "READINFO", 0, 8)) {
         programmer_write_id();
     } else if (command_matches(instruction, "DEVIDSST", 0, 8)) {
         flash_read_jedec_id();
-    } else if (command_matches(instruction, "ERASBK", 0, 6)) {
-        flash_erase_block_64k(command_get_uint8(instruction, 6));
+    } else if (command_matches(instruction, "ERASBK", 0, 6) &&
+               command_get_uint8(instruction, 6, &argument8)) {
+        flash_erase_block_64k(argument8);
     } else if (command_matches(instruction, "RESETCHP", 0, 8)) {
         flash_reset();
-    } else if (command_matches(instruction, "CHCKBK", 0, 6)) {
-        flash_check_block_erased(command_get_uint8(instruction, 6));
-    } else if (command_matches(instruction, "RDPG", 0, 4)) {
-        flash_read_page(command_get_uint16(instruction, 4));
-    } else if (command_matches(instruction, "WRSECT", 0, 6)) {
-        flash_write_sector(command_get_uint8(instruction, 6));
+    } else if (command_matches(instruction, "CHCKBK", 0, 6) &&
+               command_get_uint8(instruction, 6, &argument8)) {
+        flash_check_block_erased(argument8);
+    } else if (command_matches(instruction, "RDPG", 0, 4) &&
+               command_get_uint16(instruction, 4, &argument16)) {
+        flash_read_page(argument16);
+    } else if (command_matches(instruction, "WRSECT", 0, 6) &&
+               command_get_uint8(instruction, 6, &argument8)) {
+        flash_write_sector(argument8);
     } else if (command_matches(instruction, "BOOTFPGA", 0, 8)) {
         fpga_release_and_check_boot();
     } else if (command_matches(instruction, "HOLDFPGA", 0, 8)) {
@@ -64,8 +79,12 @@ static void parse_instruction(void) {
 static void programmer_init(void) {
     stdio_init_all();
 
-    gpio_init(PIN_LED);
-    gpio_set_dir(PIN_LED, GPIO_OUT);
+    const uint led_pins[] = {PIN_LED_BOOT, PIN_LED_READ, PIN_LED_WRITE};
+    for (size_t i = 0; i < sizeof(led_pins) / sizeof(led_pins[0]); i++) {
+        gpio_init(led_pins[i]);
+        gpio_put(led_pins[i], LED_OFF);
+        gpio_set_dir(led_pins[i], GPIO_OUT);
+    }
 
     gpio_init(PIN_CDONE);
     gpio_set_dir(PIN_CDONE, GPIO_IN);

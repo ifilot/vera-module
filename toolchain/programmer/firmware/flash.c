@@ -18,17 +18,25 @@ void flash_read_jedec_id(void) {
     uint8_t command = FLASH_JEDEC_ID;
     uint8_t response[3] = {0};
 
+    gpio_put(PIN_LED_READ, LED_ON);
     flash_cs_select();
     spi_write_blocking(SPI_PORT, &command, 1);
     spi_read_blocking(SPI_PORT, 0x00, response, 3);
     flash_cs_deselect();
+    gpio_put(PIN_LED_READ, LED_OFF);
 
     tud_cdc_write(response, sizeof(response));
     tud_cdc_write_flush();
 }
 
 void flash_erase_block_64k(uint8_t block) {
-    flash_write_enable();
+    gpio_put(PIN_LED_WRITE, LED_ON);
+    if (!flash_write_enable()) {
+        gpio_put(PIN_LED_WRITE, LED_OFF);
+        tud_cdc_write_char(0xFF);
+        tud_cdc_write_flush();
+        return;
+    }
 
     uint8_t command[] = {
         FLASH_CMD_ERASE_BLOCK_64K,
@@ -41,14 +49,16 @@ void flash_erase_block_64k(uint8_t block) {
     spi_write_blocking(SPI_PORT, command, sizeof(command));
     flash_cs_deselect();
 
-    flash_wait_busy();
-    tud_cdc_write_char(block);
+    bool success = flash_wait_busy(FLASH_BLOCK_ERASE_TIMEOUT_MS);
+    gpio_put(PIN_LED_WRITE, LED_OFF);
+    tud_cdc_write_char(success ? block : 0xFF);
     tud_cdc_write_flush();
 }
 
 void flash_reset(void) {
     uint8_t command;
 
+    gpio_put(PIN_LED_WRITE, LED_ON);
     flash_cs_select();
     command = FLASH_CMD_ENABLE_RESET;
     spi_write_blocking(SPI_PORT, &command, 1);
@@ -60,17 +70,20 @@ void flash_reset(void) {
     flash_cs_deselect();
 
     sleep_ms(1);
+    gpio_put(PIN_LED_WRITE, LED_OFF);
 }
 
 void flash_check_block_erased(uint8_t block) {
     uint32_t address = (uint32_t)block * BLOCK_SIZE;
     uint8_t buffer[BUFFER_SIZE];
 
+    gpio_put(PIN_LED_READ, LED_ON);
     for (uint32_t offset = 0; offset < BLOCK_SIZE; offset += BUFFER_SIZE) {
         flash_read_page_256(address + offset, buffer);
 
         for (size_t i = 0; i < BUFFER_SIZE; i++) {
             if (buffer[i] != 0xFF) {
+                gpio_put(PIN_LED_READ, LED_OFF);
                 tud_cdc_write_char(0xFF);
                 tud_cdc_write_flush();
                 return;
@@ -78,6 +91,7 @@ void flash_check_block_erased(uint8_t block) {
         }
     }
 
+    gpio_put(PIN_LED_READ, LED_OFF);
     tud_cdc_write_char(0x00);
     tud_cdc_write_flush();
 }
@@ -85,10 +99,15 @@ void flash_check_block_erased(uint8_t block) {
 void flash_read_page(uint16_t page) {
     uint32_t address = (uint32_t)page * PAGE_SIZE;
     uint8_t buffer[PAGE_SIZE];
+    gpio_put(PIN_LED_READ, LED_ON);
     flash_read_page_256(address, buffer);
 
     for (size_t i = 0; i < PAGE_SIZE; i += 16) {
         while (tud_cdc_write_available() < 16) {
+            if (!tud_cdc_connected()) {
+                gpio_put(PIN_LED_READ, LED_OFF);
+                return;
+            }
             tud_task();
         }
         tud_cdc_write(&buffer[i], 16);
@@ -97,13 +116,18 @@ void flash_read_page(uint16_t page) {
 
     tud_cdc_write_flush();
     tud_task();
+    gpio_put(PIN_LED_READ, LED_OFF);
 }
 
 void flash_write_sector(uint8_t sector) {
     uint32_t bytes_read = 0;
     uint8_t buffer[SECTOR_SIZE];
+    absolute_time_t receive_deadline =
+        make_timeout_time_ms(SECTOR_RECEIVE_TIMEOUT_MS);
 
-    while (bytes_read < SECTOR_SIZE) {
+    gpio_put(PIN_LED_WRITE, LED_ON);
+    while (bytes_read < SECTOR_SIZE && tud_cdc_connected() &&
+           !time_reached(receive_deadline)) {
         uint32_t available = tud_cdc_available();
         if (available > 0) {
             uint32_t amount = SECTOR_SIZE - bytes_read;
@@ -115,9 +139,18 @@ void flash_write_sector(uint8_t sector) {
         tud_task();
     }
 
+    if (bytes_read != SECTOR_SIZE) {
+        gpio_put(PIN_LED_WRITE, LED_OFF);
+        return;
+    }
+
     uint32_t base_address = (uint32_t)sector * SECTOR_SIZE;
+    bool success = true;
     for (uint32_t offset = 0; offset < SECTOR_SIZE; offset += PAGE_SIZE) {
-        flash_write_enable();
+        if (!flash_write_enable()) {
+            success = false;
+            break;
+        }
 
         uint32_t address = base_address + offset;
         uint8_t command[4] = {
@@ -131,10 +164,19 @@ void flash_write_sector(uint8_t sector) {
         spi_write_blocking(SPI_PORT, command, sizeof(command));
         spi_write_blocking(SPI_PORT, &buffer[offset], PAGE_SIZE);
         flash_cs_deselect();
-        flash_wait_busy();
+        if (!flash_wait_busy(FLASH_PAGE_PROGRAM_TIMEOUT_MS)) {
+            success = false;
+            break;
+        }
     }
 
     uint16_t checksum = crc16_xmodem(buffer, SECTOR_SIZE);
+    if (!success) {
+        // The legacy protocol has no status byte. A complemented checksum is
+        // guaranteed not to match the host's checksum and preserves framing.
+        checksum = (uint16_t)~checksum;
+    }
+    gpio_put(PIN_LED_WRITE, LED_OFF);
     tud_cdc_write_char((uint8_t)checksum);
     tud_cdc_write_char((uint8_t)(checksum >> 8));
     tud_cdc_write_flush();
@@ -149,11 +191,19 @@ void flash_cs_deselect(void) {
     gpio_put(PIN_SEL, 1);
 }
 
-void flash_write_enable(void) {
+bool flash_write_enable(void) {
     uint8_t command = FLASH_CMD_WRITE_ENABLE;
     flash_cs_select();
     spi_write_blocking(SPI_PORT, &command, 1);
     flash_cs_deselect();
+
+    command = FLASH_CMD_READ_STATUS;
+    uint8_t status = 0;
+    flash_cs_select();
+    spi_write_blocking(SPI_PORT, &command, 1);
+    spi_read_blocking(SPI_PORT, 0x00, &status, 1);
+    flash_cs_deselect();
+    return (status & FLASH_STATUS_WRITE_ENABLE) != 0;
 }
 
 void flash_read_page_256(uint32_t address, uint8_t *buffer) {
@@ -170,9 +220,9 @@ void flash_read_page_256(uint32_t address, uint8_t *buffer) {
     flash_cs_deselect();
 }
 
-void flash_wait_busy(void) {
+bool flash_wait_busy(uint32_t timeout_ms) {
     uint8_t status;
-    absolute_time_t deadline = make_timeout_time_ms(1000);
+    absolute_time_t deadline = make_timeout_time_ms(timeout_ms);
 
     do {
         uint8_t command = FLASH_CMD_READ_STATUS;
@@ -181,7 +231,12 @@ void flash_wait_busy(void) {
         spi_read_blocking(SPI_PORT, 0x00, &status, 1);
         flash_cs_deselect();
         sleep_ms(1);
-    } while ((status & FLASH_STATUS_BUSY) && !time_reached(deadline));
+        if ((status & FLASH_STATUS_BUSY) == 0) {
+            return true;
+        }
+    } while (!time_reached(deadline));
+
+    return false;
 }
 
 uint16_t crc16_xmodem(const uint8_t *data, uint16_t length) {

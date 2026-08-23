@@ -4,8 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-uint8_t command_get_uint8(const char *instruction, uint8_t offset);
-uint16_t command_get_uint16(const char *instruction, uint8_t offset);
+bool command_get_uint8(const char *instruction, uint8_t offset, uint8_t *value);
+bool command_get_uint16(const char *instruction, uint8_t offset, uint16_t *value);
 void command_echo(const char *instruction, uint8_t size);
 bool command_matches(const char *command, const char *reference,
                      uint8_t offset, uint8_t length);

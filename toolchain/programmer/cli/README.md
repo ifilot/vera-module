@@ -29,8 +29,13 @@ vera-flash.exe --version
 ```
 
 The CLI rejects devices that do not report the expected VERA programmer ID. It
-holds the FPGA in reset, resets and erases the SPI flash, verifies each erased
-block, writes 4 KiB sectors with CRC checks, reads all pages back for a bytewise
-comparison, and then checks FPGA `CDONE` after boot.
+holds the FPGA in reset, resets the SPI flash, and verifies the board's expected
+W25Q16 device from its `EF 40 15` JEDEC ID before erasing anything. It then
+verifies each erased block, writes 4 KiB sectors with CRC checks, reads all pages
+back for a bytewise comparison, and checks FPGA `CDONE` after boot.
+
+During this process the programmer PCB's WRITE LED indicates erase/program
+activity and its READ LED indicates identification/verification activity. The
+Pico's onboard LED comes on only after a successful FPGA boot.
 
 The Pico protocol addresses at most 256 sectors, so images are limited to 1 MiB.
