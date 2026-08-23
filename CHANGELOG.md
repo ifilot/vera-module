@@ -9,9 +9,12 @@ original project history is preserved in Git and is not rewritten here.
 
 ### Hardware and manufacturing
 
-- Added maintained KiCad board forks, `fork-r0` and `fork-r1`, based on the
-  earlier VERA module designs.
-- Refined the R1 design and added component-identification work.
+- Added maintained KiCad board variants based on the earlier VERA module
+  designs: `vera-full-audiojack` (formerly `fork-r0`) and
+  `vera-mini-audiojack` (formerly `fork-r1`).
+- Both variants add an audio jack and a small SD card slot.  The mini variant
+  is a reduced-size design without the RCA and composite-video jacks.
+- Refined the mini design and added component-identification work.
 - Added and iterated manufacturing/placement automation during the fork's
   board-development work; generated and superseded artifacts are intentionally
   not treated as source of truth.

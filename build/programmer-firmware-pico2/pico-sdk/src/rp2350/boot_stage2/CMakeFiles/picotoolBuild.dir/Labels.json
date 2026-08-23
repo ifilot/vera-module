@@ -1,0 +1,46 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/mnt/d/PROGRAMMING/KiCAD/vera-module/build/programmer-firmware-pico2/pico-sdk/src/rp2350/boot_stage2/CMakeFiles/picotoolBuild"
+		},
+		{
+			"file" : "/mnt/d/PROGRAMMING/KiCAD/vera-module/build/programmer-firmware-pico2/pico-sdk/src/rp2350/boot_stage2/CMakeFiles/picotoolBuild.rule"
+		},
+		{
+			"file" : "/mnt/d/PROGRAMMING/KiCAD/vera-module/build/programmer-firmware-pico2/pico-sdk/src/rp2350/boot_stage2/CMakeFiles/picotoolBuild-complete.rule"
+		},
+		{
+			"file" : "/mnt/d/PROGRAMMING/KiCAD/vera-module/build/programmer-firmware-pico2/pico-sdk/src/rp2350/boot_stage2/picotool/src/picotoolBuild-stamp/picotoolBuild-build.rule"
+		},
+		{
+			"file" : "/mnt/d/PROGRAMMING/KiCAD/vera-module/build/programmer-firmware-pico2/pico-sdk/src/rp2350/boot_stage2/picotool/src/picotoolBuild-stamp/picotoolBuild-configure.rule"
+		},
+		{
+			"file" : "/mnt/d/PROGRAMMING/KiCAD/vera-module/build/programmer-firmware-pico2/pico-sdk/src/rp2350/boot_stage2/picotool/src/picotoolBuild-stamp/picotoolBuild-download.rule"
+		},
+		{
+			"file" : "/mnt/d/PROGRAMMING/KiCAD/vera-module/build/programmer-firmware-pico2/pico-sdk/src/rp2350/boot_stage2/picotool/src/picotoolBuild-stamp/picotoolBuild-install.rule"
+		},
+		{
+			"file" : "/mnt/d/PROGRAMMING/KiCAD/vera-module/build/programmer-firmware-pico2/pico-sdk/src/rp2350/boot_stage2/picotool/src/picotoolBuild-stamp/picotoolBuild-mkdir.rule"
+		},
+		{
+			"file" : "/mnt/d/PROGRAMMING/KiCAD/vera-module/build/programmer-firmware-pico2/pico-sdk/src/rp2350/boot_stage2/picotool/src/picotoolBuild-stamp/picotoolBuild-patch.rule"
+		},
+		{
+			"file" : "/mnt/d/PROGRAMMING/KiCAD/vera-module/build/programmer-firmware-pico2/pico-sdk/src/rp2350/boot_stage2/picotool/src/picotoolBuild-stamp/picotoolBuild-test.rule"
+		},
+		{
+			"file" : "/mnt/d/PROGRAMMING/KiCAD/vera-module/build/programmer-firmware-pico2/pico-sdk/src/rp2350/boot_stage2/picotool/src/picotoolBuild-stamp/picotoolBuild-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"picotoolBuild"
+		],
+		"name" : "picotoolBuild"
+	}
+}
